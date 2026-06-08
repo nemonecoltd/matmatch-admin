@@ -164,6 +164,48 @@ scp .env.local nemonecoltd@34.64.98.113:/home/nemonecoltd/nemone-network/admin/
 
 ---
 
+## 2026-05-31 작업 내역
+
+### 문제: 어드민 글 저장 실패 (403 Forbidden)
+
+- **증상**: 어드민 패널에서 글/스페셜 저장 시 `403 Forbidden` 반환, `404 Not Found` 병행 발생
+- **원인**: Nginx `admin.nemoneai.com`의 `/api/` location이 Next.js(3001)가 아닌 백엔드(8080)로 직접 라우팅
+  - `adminProxy.ts`를 거치지 않으므로 `x-admin-secret` 헤더가 주입되지 않음
+  - 2026-05-30에 백엔드에 `verify_admin` 인증을 추가한 이후 즉시 발생 (그 전까지는 인증 없이 통과됐음)
+- **수정**: Nginx `admin.nemoneai.com` `/api/` 블록의 `proxy_pass` 를 `8080` → `3001`(Next.js)로 변경
+  ```nginx
+  location ^~ /api/ {
+      proxy_pass http://127.0.0.1:3001;
+      ...
+  }
+  ```
+- **흐름 복구**: 브라우저 → Nginx → Next.js(3001) → adminProxy(x-admin-secret 주입) → 백엔드(8080)
+
+### 문제: home.nemoneai.com → nemoneai.com/api/news CORS 차단
+
+- **증상**: `x-news-secret` 헤더가 CORS preflight에서 차단 → 게시글 DB 입력 불가
+- **원인**: Nginx `nemoneai.com` `/api/` location의 `Access-Control-Allow-Headers`에 `x-news-secret` 미포함
+- **수정**: `nemoneai.com` `/api/` 블록에 헤더 및 OPTIONS preflight 처리 추가
+  ```nginx
+  add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+  add_header 'Access-Control-Allow-Headers' 'DNT,...,x-news-secret,x-admin-secret' always;
+
+  if ($request_method = 'OPTIONS') {
+      return 204;
+  }
+  ```
+
+### 참고: 서버 다운 원인 (2026-05-30 23:35 KST)
+
+- **원인**: Spot VM(선점형) — GCP가 인프라 용량 필요 시 강제 종료
+  - `shutdownEvent: {0}` (비정상 종료 시그니처)
+  - 약 7시간 다운 후 수동 재부팅
+- **lateBootReportEvent ERROR**: 비정상 종료 후 재부팅 시 Shielded VM 무결성 측정값 불일치 → 서비스 영향 없음
+- **대응**: GCP Monitoring Uptime Check 설정 권장 (서버 다운 시 즉시 이메일 알림)
+
+---
+
 ## 남은 작업
 
 - [ ] `ecosystem.config.cjs` PM2 환경변수 로딩 방식 개선 (현재 수동 export 필요)
+- [ ] GCP Monitoring Uptime Check 설정 (Spot VM 다운 시 즉시 알림)
