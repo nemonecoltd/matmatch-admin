@@ -15,6 +15,7 @@ export default function AnalyticsDashboard() {
   const { data: session, status } = useSession();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [members, setMembers] = useState<{ total: number; google: number; email: number } | null>(null);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -23,6 +24,11 @@ export default function AnalyticsDashboard() {
         .then(setData)
         .catch(console.error)
         .finally(() => setLoading(false));
+
+      fetch("/api/users/count")
+        .then(res => res.json())
+        .then(setMembers)
+        .catch(console.error);
     }
   }, [status]);
 
@@ -75,6 +81,13 @@ export default function AnalyticsDashboard() {
         {/* MAIN BODY */}
         <main style={{ background: "#f5f5f0", borderRadius: "0 0 16px 16px", padding: "2rem", boxShadow: "0 8px 40px rgba(0,0,0,0.18)" }}>
           
+          {/* MEMBERS */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
+            <StatCard icon={<Users color="#a78bfa" />} title="Total Members" value={members?.total ?? 0} color="#a78bfa" />
+            <StatCard icon={<Users color="#4285F4" />} title="Google 회원" value={members?.google ?? 0} color="#4285F4" />
+            <StatCard icon={<Users color="#94a3b8" />} title="Email 회원" value={members?.email ?? 0} color="#94a3b8" />
+          </div>
+
           {/* OVERVIEW CARDS */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
             <StatCard icon={<Users color={GOLD} />} title="Total Visitors (30d)" value={totalVisitors} color={GOLD} />
