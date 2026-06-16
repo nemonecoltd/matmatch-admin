@@ -24,7 +24,7 @@ export default function CMSDesk() {
   // [무결성 로직 2: 데이터 실시간 동기화]
   const fetchPosts = () => {
     setLoading(true);
-    fetch("/api/posts")
+    fetch("/api/posts?limit=500")
       .then((res) => {
         if (!res.ok) throw new Error("Network error");
         return res.json();
