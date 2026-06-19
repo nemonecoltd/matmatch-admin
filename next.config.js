@@ -5,19 +5,8 @@ const nextConfig = {
       bodySizeLimit: '50mb',
     },
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/auth/:path*', // NextAuth.js API 라우트는 rewrites에서 제외
-        destination: '/api/auth/:path*',
-      },
-      {
-        source: '/api/:path*', // 그 외의 /api 요청은 백엔드로 전달
-        destination: 'http://34.64.98.113:8080/:path*',
-        // destination: 'http://127.0.0.1:8080/:path*',
-      },
-    ];
-  },
+  // rewrites 제거: /api/ 요청은 Route Handler(adminProxy)가 처리하도록 함
+  // adminProxy가 세션 체크 + x-admin-secret 헤더를 추가하여 백엔드로 전달
 };
 
 export default nextConfig;
