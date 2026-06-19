@@ -9,6 +9,10 @@ import "react-quill/dist/quill.snow.css"; // ReactQuill 스타일 임포트
 // ReactQuill을 클라이언트 컴포넌트로 동적 임포트
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
+// Quill이 삽입하는 빈 단락 <p><br></p> 제거
+const cleanQuillHtml = (html: string) =>
+  html.replace(/<p><br\s*\/?><\/p>/gi, '').trim();
+
 // [추가] 이미지 압축 헬퍼 함수
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve) => {
@@ -105,7 +109,9 @@ export default function NewPost() {
 
     try {
       const data = new FormData();
-      Object.entries(formData).forEach(([k, v]) => data.append(k, v));
+      Object.entries(formData).forEach(([k, v]) =>
+        data.append(k, k === 'body_text' ? cleanQuillHtml(v) : v)
+      );
       
       if (selectedFile) {
         data.append("image_file", selectedFile);

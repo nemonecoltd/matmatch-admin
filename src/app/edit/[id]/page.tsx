@@ -9,6 +9,10 @@ import "react-quill/dist/quill.snow.css"; // ReactQuill 스타일 임포트
 // ReactQuill을 클라이언트 컴포넌트로 동적 임포트
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
+// Quill이 삽입하는 빈 단락 <p><br></p> 제거
+const cleanQuillHtml = (html: string) =>
+  html.replace(/<p><br\s*\/?><\/p>/gi, '').trim();
+
 // [추가] 이미지 압축 헬퍼 함수
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve) => {
@@ -108,7 +112,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
       .then((data) => {
         setFormData({
           title: data.title || "",
-          body_text: data.body_text || "",
+          body_text: cleanQuillHtml(data.body_text || ""),
           category: data.category || "Taste",
           content_type: data.content_type || "YOUTUBE_LONG",
           video_url: data.video_url || "",
@@ -129,8 +133,9 @@ export default function EditPage({ params }: { params: { id: string } }) {
     
     try {
       const data = new FormData();
-      // 기존 텍스트 데이터들을 FormData에 담기
-      Object.entries(formData).forEach(([k, v]) => data.append(k, v));
+      Object.entries(formData).forEach(([k, v]) =>
+        data.append(k, k === 'body_text' ? cleanQuillHtml(v) : v)
+      );
       
       // 새로 선택한 이미지 파일이 있다면 추가
       if (selectedFile) {
