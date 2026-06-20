@@ -109,4 +109,51 @@
     max-width: 100%;
     border-radius: 16px;
   }
+
+  /* [추가] MD 첨부 콘텐츠 — 표 */
+  .prose-custom .md-import-block {
+    margin: 2rem 0;
+  }
+  .prose-custom .md-import-block table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.95em;
+  }
+  .prose-custom .md-import-block th,
+  .prose-custom .md-import-block td {
+    border: 1px solid rgba(212,175,55,0.25);
+    padding: 0.6rem 0.9rem;
+    text-align: left;
+  }
+  .prose-custom .md-import-block th {
+    background: rgba(212,175,55,0.12);
+    color: var(--color-brand-gold);
+    font-weight: 900;
+  }
+  .prose-custom .md-import-block tr:nth-child(even) td {
+    background: rgba(255,255,255,0.02);
+  }
+  /* [추가] MD 첨부 콘텐츠 — 박스(blockquote) */
+  .prose-custom .md-import-block blockquote {
+    margin: 1.5rem 0;
+    padding: 1rem 1.5rem;
+    border-left: 3px solid var(--color-brand-gold);
+    background: rgba(212,175,55,0.06);
+    border-radius: 0 8px 8px 0;
+    color: #ddd;
+    font-style: italic;
+  }
+  .prose-custom .md-import-block code {
+    background: rgba(255,255,255,0.06);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+  .prose-custom .md-import-block pre {
+    background: #111;
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
 }

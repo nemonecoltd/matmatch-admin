@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link"; // Link 임포트 추가
 import dynamic from "next/dynamic"; // ReactQuill을 동적으로 임포트
 import "react-quill/dist/quill.snow.css"; // ReactQuill 스타일 임포트
+import { mdToHtml, wrapMdBlock, extractMdBlocks } from "@/utils/markdown";
 
 // ReactQuill을 클라이언트 컴포넌트로 동적 임포트
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
@@ -93,6 +94,8 @@ export default function EditPage({ params }: { params: { id: string } }) {
   const [saving, setSaving] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false); // 미리보기 토글 상태 추가
+  const [mdBlocksHtml, setMdBlocksHtml] = useState("");
+  const [mdFileName, setMdFileName] = useState("");
 
   // 이미지 미리보기 URL 생성 (새로 업로드한 파일 우선)
   const previewImageUrl = useMemo(() => {
@@ -110,14 +113,17 @@ export default function EditPage({ params }: { params: { id: string } }) {
         return res.json();
       })
       .then((data) => {
+        const { quillHtml, mdBlocksHtml: extractedMd } = extractMdBlocks(data.body_text || "");
         setFormData({
           title: data.title || "",
-          body_text: cleanQuillHtml(data.body_text || ""),
+          body_text: cleanQuillHtml(quillHtml),
           category: data.category || "Taste",
           content_type: data.content_type || "YOUTUBE_LONG",
           video_url: data.video_url || "",
           tags: data.tags || "",
         });
+        setMdBlocksHtml(extractedMd);
+        if (extractedMd) setMdFileName("기존 첨부 콘텐츠");
         setLoading(false);
       })
       .catch((err) => {
@@ -132,11 +138,12 @@ export default function EditPage({ params }: { params: { id: string } }) {
     setSaving(true);
     
     try {
+      const finalBody = cleanQuillHtml(formData.body_text) + wrapMdBlock(mdBlocksHtml);
       const data = new FormData();
       Object.entries(formData).forEach(([k, v]) =>
-        data.append(k, k === 'body_text' ? cleanQuillHtml(v) : v)
+        data.append(k, k === 'body_text' ? finalBody : v)
       );
-      
+
       // 새로 선택한 이미지 파일이 있다면 추가
       if (selectedFile) {
         data.append("image_file", selectedFile);
@@ -197,6 +204,17 @@ export default function EditPage({ params }: { params: { id: string } }) {
 
   const focusStyle = (key: string) =>
     focused === key ? { ...inputStyle, borderColor: GOLD } : inputStyle;
+
+  const handleMdUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    setMdBlocksHtml(mdToHtml(text));
+    setMdFileName(file.name);
+    e.target.value = "";
+  };
+
+  const combinedPreviewHtml = formData.body_text + wrapMdBlock(mdBlocksHtml);
 
   if (loading) return (
     <div style={{ minHeight: "100vh", background: BLACK, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -287,6 +305,19 @@ export default function EditPage({ params }: { params: { id: string } }) {
                 <input value={formData.tags} onChange={(e) => update("tags", e.target.value)} onFocus={() => setFocused("tags")} onBlur={() => setFocused(null)} style={focusStyle("tags")} />
               </div>
 
+              <div>
+                <label style={labelStyle}>📄 MD 첨부 (표·박스 등) — 본문 뒤에 추가됩니다</label>
+                <div onClick={() => document.getElementById("md-edit-upload")?.click()} style={{ background: "#111", border: `2px dashed ${mdFileName ? GOLD : "rgba(255,255,255,0.12)"}`, borderRadius: 12, padding: "1.25rem", textAlign: "center", cursor: "pointer" }}>
+                  <p style={{ color: mdFileName ? GOLD : "#444", fontSize: 11, fontStyle: "italic", margin: 0 }}>{mdFileName ? `✓ ${mdFileName}` : "클릭하여 .md 파일 업로드"}</p>
+                </div>
+                <input id="md-edit-upload" type="file" accept=".md,.markdown,text/markdown" style={{ display: "none" }} onChange={handleMdUpload} />
+                {mdBlocksHtml && (
+                  <button type="button" onClick={() => { setMdBlocksHtml(""); setMdFileName(""); }} style={{ marginTop: "0.5rem", background: "transparent", border: "1px solid rgba(255,0,0,0.3)", borderRadius: 8, padding: "0.4rem 0.8rem", color: "#e87", fontSize: 10, cursor: "pointer" }}>
+                    MD 첨부 제거
+                  </button>
+                )}
+              </div>
+
               <button type="submit" disabled={saving} style={{ background: saving ? "#555" : `linear-gradient(to bottom, ${GOLD}, #a07820)`, color: BLACK, border: "none", borderRadius: 50, padding: "1.1rem", fontWeight: 900, fontStyle: "italic", cursor: "pointer" }}>
                 {saving ? "⏳ Updating..." : "✎ Update Database"}
               </button>
@@ -330,7 +361,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
 
                     <div style={{ color: "#ccc", lineHeight: 1.8, fontSize: "16px", fontStyle: "normal" }}>
                       {/* 뷰어 페이지와 100% 동일한 CSS 클래스 적용 */}
-                      <div dangerouslySetInnerHTML={{ __html: formData.body_text || "<p>Loading content...</p>" }} className="text-gray-200 leading-[1.9] text-lg md:text-xl space-y-10 max-w-7xl mx-auto prose-custom font-light tracking-wide not-italic" />
+                      <div dangerouslySetInnerHTML={{ __html: combinedPreviewHtml || "<p>Loading content...</p>" }} className="text-gray-200 leading-[1.9] text-lg md:text-xl space-y-10 max-w-7xl mx-auto prose-custom font-light tracking-wide not-italic" />
                     </div>
 
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "2rem" }}>
