@@ -17,6 +17,7 @@ export default function CMSDesk() {
   const [posts, setPosts] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   
   // 카테고리 업데이트 (이전의 하드코딩된 카테고리에서 새 카테고리로 변경)
   const categories = ["ALL", "Taste", "Culture", "Life", "Tech"]; 
@@ -134,6 +135,23 @@ export default function CMSDesk() {
         {/* 클로드 스타일의 내부 골드 디바이더 */}
         <div style={{ border: `1.5px solid ${GOLD}`, borderRadius: 8, padding: "1.5rem" }}>
           
+          {/* SEARCH SECTION */}
+          <section style={{ marginBottom: "1.25rem" }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", color: "#1a1a1a", marginBottom: "0.75rem", textTransform: "uppercase" }}>SEARCH</h3>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="제목 또는 번호(#id) 검색..."
+                style={{ flex: 1, padding: "0.55rem 1rem", border: `2px solid ${searchQuery ? GOLD : "#ccc"}`, borderRadius: 8, fontSize: 13, fontStyle: "italic", background: "#fff", outline: "none", transition: "border 0.2s" }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} style={{ padding: "0.55rem 0.9rem", border: "2px solid #ccc", borderRadius: 8, background: "#fff", color: "#888", fontSize: 12, cursor: "pointer" }}>✕</button>
+              )}
+            </div>
+          </section>
+
           {/* CATEGORY SECTION: 필터 기능 활성화 */}
           <section style={{ marginBottom: "1.5rem" }}>
             <h3 style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", color: "#1a1a1a", marginBottom: "0.75rem", textTransform: "uppercase" }}>CATEGORY</h3>
@@ -152,14 +170,20 @@ export default function CMSDesk() {
 
           {/* LIST SECTION: 실제 DB 데이터 루프 */}
           <section>
-            <h3 style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", color: "#1a1a1a", marginBottom: "1rem", textTransform: "uppercase" }}>LIST</h3>
+            <h3 style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", color: "#1a1a1a", marginBottom: "1rem", textTransform: "uppercase" }}>
+              LIST {searchQuery && <span style={{ color: GOLD, fontStyle: "italic", fontWeight: 400, textTransform: "none", fontSize: 12 }}>— "{searchQuery}" 검색 결과</span>}
+            </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
               {loading ? (
                 <p style={{ textAlign: "center", color: "#999", fontStyle: "italic", padding: "40px" }}>Fetching Database...</p>
-              ) : posts.length === 0 ? (
-                <p style={{ textAlign: "center", color: "#999", padding: "40px" }}>등록된 글이 없습니다.</p>
-              ) : (
-                posts.map((post) => (
+              ) : (() => {
+                const q = searchQuery.trim().toLowerCase();
+                const filtered = q
+                  ? posts.filter((p) => p.title?.toLowerCase().includes(q) || String(p.id) === q.replace(/^#/, ""))
+                  : posts;
+                return filtered.length === 0 ? (
+                  <p style={{ textAlign: "center", color: "#999", padding: "40px" }}>{searchQuery ? "검색 결과가 없습니다." : "등록된 글이 없습니다."}</p>
+                ) : filtered.map((post) => (
                   <div key={post.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                     {/* CARD BODY: 네온 블루 보더 강제 적용 */}
                     <div style={{ flex: 1, background: "#0c0c0c", border: `2px solid ${CYAN}`, borderRadius: 24, padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", gap: "1.25rem", boxShadow: `0 4px 24px rgba(0,0,0,0.5)` }}>
@@ -185,8 +209,8 @@ export default function CMSDesk() {
                       </button>
                     </div>
                   </div>
-                ))
-              )}
+                ));
+              })()}
             </div>
           </section>
         </div>

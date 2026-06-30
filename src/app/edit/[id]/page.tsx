@@ -1,20 +1,45 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react"; // useMemo 임포트
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link"; // Link 임포트 추가
-import dynamic from "next/dynamic"; // ReactQuill을 동적으로 임포트
-import "react-quill/dist/quill.snow.css"; // ReactQuill 스타일 임포트
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import "react-quill/dist/quill.snow.css";
 import { mdToHtml, wrapMdBlock, extractMdBlocks } from "@/utils/markdown";
 
 // ReactQuill을 클라이언트 컴포넌트로 동적 임포트
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false }) as any;
 
 // Quill이 삽입하는 빈 단락 <p><br></p> 제거
 const cleanQuillHtml = (html: string) =>
   html.replace(/<p><br\s*\/?><\/p>/gi, '').trim();
 
 // [추가] 이미지 압축 헬퍼 함수
+const compressThumbnail = (file: File): Promise<Blob> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1200;
+        let width = img.width;
+        let height = img.height;
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d")?.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.8);
+      };
+    };
+  });
+};
+
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -146,7 +171,8 @@ export default function EditPage({ params }: { params: { id: string } }) {
 
       // 새로 선택한 이미지 파일이 있다면 추가
       if (selectedFile) {
-        data.append("image_file", selectedFile);
+        const compressed = await compressThumbnail(selectedFile);
+        data.append("image_file", compressed, selectedFile.name.replace(/\.[^.]+$/, ".jpg"));
       }
 
       const res = await fetch(`/api/posts/${id}`, { 
@@ -232,7 +258,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
             <div style={{ width: 52, height: 52, background: `linear-gradient(145deg, ${GOLD}, #a07820)`, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 21, fontWeight: 900, color: BLACK }}>✎</div>
             <h1 style={{ color: "#fff", fontSize: 28, fontWeight: 900, fontStyle: "italic", margin: 0 }}>Edit Archive.</h1>
           </div>
-          <div style={{ display: "flex", gap: "1rem" }}>
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
             <Link href="/data">
               <button type="button" style={{ background: "transparent", border: `2px solid ${GOLD}`, borderRadius: 8, padding: "0.5rem 1.1rem", color: GOLD, fontSize: 11, fontWeight: 900, fontStyle: "italic", cursor: "pointer" }}>
                 DATA
@@ -241,7 +267,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
             <button type="button" onClick={() => setShowPreview(!showPreview)} style={{ background: showPreview ? GOLD : "transparent", border: `2px solid ${GOLD}`, borderRadius: 8, padding: "0.5rem 1.1rem", color: showPreview ? BLACK : GOLD, fontSize: 11, fontWeight: 900, fontStyle: "italic", cursor: "pointer", transition: "all 0.2s" }}>
               {showPreview ? "Hide Preview" : "Show Preview"}
             </button>
-            <button onClick={() => router.push("/")} style={{ background: "transparent", border: "2px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "0.5rem 1.1rem", color: "#aaa", cursor: "pointer" }}>← Cancel</button>
+            <button type="button" onClick={() => router.push("/")} style={{ background: "transparent", border: "2px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "0.5rem 1.1rem", color: "#aaa", fontSize: 11, fontWeight: 700, fontStyle: "italic", cursor: "pointer" }}>← Cancel</button>
           </div>
         </header>
 
@@ -250,19 +276,34 @@ export default function EditPage({ params }: { params: { id: string } }) {
           {/* EDITOR SECTION */}
           <div style={{ flex: 1, border: `1.5px solid ${GOLD}`, borderRadius: 12, padding: "1.75rem" }}>
             <form onSubmit={handleUpdate} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              <div style={{ textAlign: "right", marginBottom: "-1rem" }}>
-                <span style={{ color: CYAN, fontSize: 10, fontWeight: 900 }}>ENTRY #{id}</span>
+
+              {/* 카테고리 + 컨텐츠타입 콤보 + Update 버튼 */}
+              <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", borderBottom: "1px solid rgba(0,0,0,0.08)", paddingBottom: "1rem" }}>
+                <select value={formData.category} onChange={(e) => update("category", e.target.value)}
+                  style={{ background: "#0c0c0c", border: `1.5px solid ${GOLD}`, borderRadius: 8, color: GOLD, fontSize: 11, fontWeight: 700, padding: "0.45rem 0.7rem", cursor: "pointer", fontStyle: "italic", outline: "none" }}>
+                  {["Taste", "Culture", "Life", "Tech"].map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select value={formData.content_type} onChange={(e) => update("content_type", e.target.value)}
+                  style={{ background: "#0c0c0c", border: `1.5px solid ${CYAN}`, borderRadius: 8, color: CYAN, fontSize: 11, fontWeight: 700, padding: "0.45rem 0.7rem", cursor: "pointer", fontStyle: "italic", outline: "none" }}>
+                  {[{ val: "YOUTUBE_LONG", label: "YOUTUBE (16:9)" }, { val: "YOUTUBE_SHORT", label: "SHORTS (9:16)" }, { val: "ARTICLE", label: "ARTICLE" }, { val: "SPOTIFY", label: "SPOTIFY" }].map(({ val, label }) => (
+                    <option key={val} value={val}>{label}</option>
+                  ))}
+                </select>
+                <span style={{ color: CYAN, fontSize: 10, fontWeight: 900 }}>#{id}</span>
+                <button type="submit" disabled={saving} style={{ marginLeft: "auto", background: saving ? "#555" : `linear-gradient(to bottom, ${GOLD}, #a07820)`, color: BLACK, border: "none", borderRadius: 8, padding: "0.45rem 1.2rem", fontSize: 12, fontWeight: 900, fontStyle: "italic", cursor: saving ? "not-allowed" : "pointer", boxShadow: saving ? "none" : `0 4px 14px rgba(212,175,55,0.35)` }}>
+                  {saving ? "⏳ ..." : "✎ Update Database"}
+                </button>
               </div>
 
               <input required value={formData.title} onChange={(e) => update("title", e.target.value)} onFocus={() => setFocused("title")} onBlur={() => setFocused(null)} style={{ ...inputStyle, fontSize: 20, fontWeight: 700, color: GOLD, background: "transparent", border: "none", borderBottom: focused === "title" ? `2px solid ${GOLD}` : "2px solid rgba(0,0,0,0.1)", borderRadius: 0, padding: "0.5rem 0" }} />
 
-              {/* STORY CONTENT (body_text) - [이동] 2번째 순서로 배치 */}
+              {/* STORY CONTENT (body_text) */}
               <div>
                 <label style={labelStyle}>Story Content</label>
-                <ReactQuill 
+                <ReactQuill
                   theme="snow"
                   value={formData.body_text}
-                  onChange={(content) => update("body_text", content)}
+                  onChange={(content: string) => update("body_text", content)}
                   modules={quillModules}
                   formats={[
                     'header', 'font', 'size',
@@ -272,19 +313,6 @@ export default function EditPage({ params }: { params: { id: string } }) {
                   ]}
                   style={{ borderRadius: 12, lineHeight: 1.7, background: "#fff", color: "#333", minHeight: "200px" }}
                 />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <div style={{ display: "flex", flexDirection: "column", background: "#0c0c0c", border: `2px solid ${CYAN}`, borderRadius: 16, overflow: "hidden" }}>
-                  {["Taste", "Culture", "Life", "Tech"].map((cat) => (
-                    <button type="button" key={cat} onClick={() => update("category", cat)} style={{ padding: "0.6rem", background: formData.category === cat ? GOLD : "transparent", color: formData.category === cat ? BLACK : "#555", border: "none", cursor: "pointer", fontSize: 9 }}>{cat}</button>
-                  ))}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", background: "#0c0c0c", border: `2px solid ${CYAN}`, borderRadius: 16, overflow: "hidden" }}>
-                  {["YOUTUBE_LONG", "YOUTUBE_SHORT", "ARTICLE", "SPOTIFY"].map((type) => (
-                    <button type="button" key={type} onClick={() => update("content_type", type)} style={{ padding: "0.6rem", background: formData.content_type === type ? GOLD : "transparent", color: formData.content_type === type ? BLACK : "#555", border: "none", cursor: "pointer", fontSize: 9 }}>{type}</button>
-                  ))}
-                </div>
               </div>
 
               <div>
@@ -318,9 +346,6 @@ export default function EditPage({ params }: { params: { id: string } }) {
                 )}
               </div>
 
-              <button type="submit" disabled={saving} style={{ background: saving ? "#555" : `linear-gradient(to bottom, ${GOLD}, #a07820)`, color: BLACK, border: "none", borderRadius: 50, padding: "1.1rem", fontWeight: 900, fontStyle: "italic", cursor: "pointer" }}>
-                {saving ? "⏳ Updating..." : "✎ Update Database"}
-              </button>
             </form>
           </div>
 

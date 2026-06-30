@@ -1,20 +1,45 @@
 "use client";
 
-import { useState, useMemo } from "react"; // useMemo 임포트
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link"; // Link 임포트 추가
-import dynamic from "next/dynamic"; // ReactQuill을 동적으로 임포트
-import "react-quill/dist/quill.snow.css"; // ReactQuill 스타일 임포트
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import "react-quill/dist/quill.snow.css";
 import { mdToHtml, wrapMdBlock } from "@/utils/markdown";
 
 // ReactQuill을 클라이언트 컴포넌트로 동적 임포트
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false }) as any;
 
 // Quill이 삽입하는 빈 단락 <p><br></p> 제거
 const cleanQuillHtml = (html: string) =>
   html.replace(/<p><br\s*\/?><\/p>/gi, '').trim();
 
 // [추가] 이미지 압축 헬퍼 함수
+const compressThumbnail = (file: File): Promise<Blob> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1200;
+        let width = img.width;
+        let height = img.height;
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d")?.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.8);
+      };
+    };
+  });
+};
+
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -78,7 +103,7 @@ const labelStyle = {
 };
 
 export default function NewPost() {
-  const router = useRouter(); // [보존] 라우터 사용
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [focused, setFocused] = useState<string | null>(null);
@@ -118,7 +143,8 @@ export default function NewPost() {
       );
 
       if (selectedFile) {
-        data.append("image_file", selectedFile);
+        const compressed = await compressThumbnail(selectedFile);
+        data.append("image_file", compressed, selectedFile.name.replace(/\.[^.]+$/, ".jpg"));
       }
 
       const res = await fetch("/api/posts", { 
@@ -202,7 +228,7 @@ export default function NewPost() {
               <p style={{ color: GOLD, fontSize: 9, letterSpacing: "0.28em", textTransform: "uppercase", margin: 0 }}>네모네AIM Admin System v1.0</p>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "1rem" }}>
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
             <Link href="/data">
               <button type="button" style={{ background: "transparent", border: `2px solid ${GOLD}`, borderRadius: 8, padding: "0.5rem 1.1rem", color: GOLD, fontSize: 11, fontWeight: 900, fontStyle: "italic", cursor: "pointer" }}>
                 DATA
@@ -211,7 +237,7 @@ export default function NewPost() {
             <button type="button" onClick={() => setShowPreview(!showPreview)} style={{ background: showPreview ? GOLD : "transparent", border: `2px solid ${GOLD}`, borderRadius: 8, padding: "0.5rem 1.1rem", color: showPreview ? BLACK : GOLD, fontSize: 11, fontWeight: 900, fontStyle: "italic", cursor: "pointer", transition: "all 0.2s" }}>
               {showPreview ? "Hide Preview" : "Show Preview"}
             </button>
-            <button onClick={() => router.push("/")} style={{ background: "transparent", border: `2px solid rgba(255,255,255,0.2)`, borderRadius: 8, padding: "0.5rem 1.1rem", color: "#aaa", fontSize: 11, fontWeight: 700, fontStyle: "italic", cursor: "pointer" }}>← Back to Admin</button>
+            <button type="button" onClick={() => router.push("/")} style={{ background: "transparent", border: `2px solid rgba(255,255,255,0.2)`, borderRadius: 8, padding: "0.5rem 1.1rem", color: "#aaa", fontSize: 11, fontWeight: 700, fontStyle: "italic", cursor: "pointer" }}>← Back to Admin</button>
           </div>
         </header>
 
@@ -221,13 +247,26 @@ export default function NewPost() {
           {/* EDITOR SECTION */}
           <div style={{ flex: 1, border: `1.5px solid ${GOLD}`, borderRadius: 12, padding: "1.75rem" }}>
             
-            <div style={{ marginBottom: "1.75rem", borderBottom: "1px solid rgba(0,0,0,0.08)", paddingBottom: "1rem" }}>
-              <p style={{ fontSize: 9, color: "#888", letterSpacing: "0.2em", textTransform: "uppercase", margin: "0 0 0.25rem" }}>NEW ENTRY</p>
-              <h2 style={{ fontSize: 28, fontWeight: 900, fontStyle: "italic", color: GOLD, letterSpacing: "-0.04em", margin: 0 }}>Create Archive.</h2>
-            </div>
-
             <form onSubmit={handleSubmit}>
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+                {/* 카테고리 + 컨텐츠타입 콤보 + Publish 버튼 */}
+                <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", borderBottom: "1px solid rgba(0,0,0,0.08)", paddingBottom: "1rem" }}>
+                  <select value={formData.category} onChange={(e) => update("category", e.target.value)}
+                    style={{ background: "#0c0c0c", border: `1.5px solid ${GOLD}`, borderRadius: 8, color: GOLD, fontSize: 11, fontWeight: 700, padding: "0.45rem 0.7rem", cursor: "pointer", fontStyle: "italic", outline: "none" }}>
+                    {["Taste", "Culture", "Life", "Tech"].map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <select value={formData.content_type} onChange={(e) => update("content_type", e.target.value)}
+                    style={{ background: "#0c0c0c", border: `1.5px solid ${CYAN}`, borderRadius: 8, color: CYAN, fontSize: 11, fontWeight: 700, padding: "0.45rem 0.7rem", cursor: "pointer", fontStyle: "italic", outline: "none" }}>
+                    {[{ val: "YOUTUBE_LONG", label: "YOUTUBE (16:9)" }, { val: "YOUTUBE_SHORT", label: "SHORTS (9:16)" }, { val: "ARTICLE", label: "ARTICLE" }, { val: "SPOTIFY", label: "SPOTIFY" }].map(({ val, label }) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                  <button type="submit" disabled={loading} style={{ marginLeft: "auto", background: loading ? "#555" : `linear-gradient(to bottom, ${GOLD}, #a07820)`, color: BLACK, border: "none", borderRadius: 8, padding: "0.45rem 1.2rem", fontSize: 12, fontWeight: 900, fontStyle: "italic", cursor: loading ? "not-allowed" : "pointer", boxShadow: loading ? "none" : `0 4px 14px rgba(212,175,55,0.35)` }}>
+                    {loading ? "⏳ ..." : "▶ Publish Archive"}
+                  </button>
+                </div>
+
                 {/* TITLE */}
                 <div>
                   <label style={labelStyle}>Post Title</label>
@@ -236,13 +275,13 @@ export default function NewPost() {
                   />
                 </div>
 
-                {/* STORY CONTENT (body_text) - [이동] 2번째 순서로 배치 */}
+                {/* STORY CONTENT (body_text) */}
                 <div>
                   <label style={labelStyle}>Story Content</label>
-                  <ReactQuill 
+                  <ReactQuill
                     theme="snow"
                     value={formData.body_text}
-                    onChange={(content) => update("body_text", content)}
+                    onChange={(content: string) => update("body_text", content)}
                     modules={quillModules}
                     formats={[
                       'header', 'font', 'size',
@@ -252,25 +291,6 @@ export default function NewPost() {
                     ]}
                     style={{ ...focusStyle("body"), borderRadius: 12, lineHeight: 1.7, background: "#fff", color: "#333", minHeight: "200px" }}
                   />
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                  <div>
-                    <label style={labelStyle}>Category</label>
-                    <div style={{ display: "flex", flexDirection: "column", background: "#0c0c0c", border: `2px solid ${CYAN}`, borderRadius: 16, overflow: "hidden" }}>
-                      {["Taste", "Culture", "Life", "Tech"].map((cat) => (
-                        <button type="button" key={cat} onClick={() => update("category", cat)} style={{ padding: "0.6rem 1rem", textAlign: "left", background: formData.category === cat ? GOLD : "transparent", color: formData.category === cat ? BLACK : "#aaa", fontSize: 10, fontWeight: 700, fontStyle: "italic", border: "none", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>{cat}</button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Content Type</label>
-                    <div style={{ display: "flex", flexDirection: "column", background: "#0c0c0c", border: `2px solid ${CYAN}`, borderRadius: 16, overflow: "hidden" }}>
-                      {[ { val: "YOUTUBE_LONG", label: "YOUTUBE (16:9)" }, { val: "YOUTUBE_SHORT", label: "SHORTS (9:16)" }, { val: "ARTICLE", label: "ARTICLE" }, { val: "SPOTIFY", label: "SPOTIFY" } ].map(({ val, label }) => (
-                        <button type="button" key={val} onClick={() => update("content_type", val)} style={{ padding: "0.6rem 1rem", textAlign: "left", background: formData.content_type === val ? GOLD : "transparent", color: formData.content_type === val ? BLACK : "#aaa", fontSize: 10, fontWeight: 700, fontStyle: "italic", border: "none", cursor: "pointer", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>{label}</button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 <div>
@@ -304,9 +324,6 @@ export default function NewPost() {
                   )}
                 </div>
 
-                <button type="submit" disabled={loading} style={{ width: "100%", background: loading ? "#555" : `linear-gradient(to bottom, ${GOLD}, #a07820)`, color: BLACK, border: "none", borderRadius: 50, padding: "1.1rem", fontSize: 13, fontWeight: 900, fontStyle: "italic", cursor: loading ? "not-allowed" : "pointer", boxShadow: loading ? "none" : `0 4px 20px rgba(212,175,55,0.4)` }}>
-                  {loading ? "⏳ Publishing..." : "▶ Publish Archive"}
-                </button>
               </div>
             </form>
           </div>
