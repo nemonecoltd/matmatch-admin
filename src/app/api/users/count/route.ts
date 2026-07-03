@@ -44,6 +44,7 @@ export async function GET() {
 
   const google = allUsers.filter((u) => u.app_metadata?.provider === "google").length;
   const email = allUsers.filter((u) => u.app_metadata?.provider === "email").length;
+  const kakao = allUsers.filter((u) => u.app_metadata?.provider === "kakao").length;
 
-  return NextResponse.json({ total: allUsers.length, google, email });
+  return NextResponse.json({ total: allUsers.length, google, email, kakao });
 }

@@ -4,24 +4,36 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { BarChart2, Users, Eye, TrendingUp, ArrowLeft } from 'lucide-react';
+import { BarChart2, TrendingUp, ArrowLeft, Users } from 'lucide-react';
 
 const GOLD = "#D4AF37";
 const CYAN = "#22d3ee";
 const BLACK = "#0c0c0c";
 
+interface RankingItem {
+  id: number;
+  title: string;
+  category: string;
+  image_url: string;
+  created_at: string;
+  view_count: number;
+  comment_count: number;
+  like_count: number;
+  score: number;
+}
+
 export default function AnalyticsDashboard() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [data, setData] = useState<any>(null);
+  const [ranking, setRanking] = useState<RankingItem[]>([]);
+  const [members, setMembers] = useState<{ total: number; google: number; email: number; kakao: number } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [members, setMembers] = useState<{ total: number; google: number; email: number } | null>(null);
 
   useEffect(() => {
     if (status === "authenticated") {
-      fetch("/api/analytics/summary")
+      fetch("/api/admin/ranking/top10")
         .then(res => res.json())
-        .then(setData)
+        .then(setRanking)
         .catch(console.error)
         .finally(() => setLoading(false));
 
@@ -45,18 +57,10 @@ export default function AnalyticsDashboard() {
     return null;
   }
 
-  const dailyStats = data?.daily || [];
-  const topPosts = data?.top_posts || [];
-
-  // 통계 계산
-  const totalViews = topPosts.reduce((acc: number, post: any) => acc + post.views, 0);
-  const totalDailyViews = dailyStats.reduce((acc: number, stat: any) => acc + stat.total_views, 0);
-  const totalVisitors = dailyStats.reduce((acc: number, stat: any) => acc + stat.visitors, 0);
-
   return (
     <div style={{ fontFamily: "'Georgia', serif", background: "#e8e8e8", minHeight: "100vh", padding: "2rem" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        
+      <div style={{ maxWidth: 900, margin: "0 auto" }}>
+
         {/* HEADER */}
         <header style={{ background: BLACK, borderBottom: `4px solid ${GOLD}`, borderRadius: "16px 16px 0 0", padding: "1.25rem 1.75rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
@@ -65,7 +69,7 @@ export default function AnalyticsDashboard() {
             </div>
             <div>
               <h1 style={{ color: "#fff", fontSize: 32, fontWeight: 900, fontStyle: "italic", letterSpacing: "-0.05em", margin: 0, lineHeight: 1 }}>Data Insight.</h1>
-              <p style={{ color: GOLD, fontSize: 10, letterSpacing: "0.28em", textTransform: "uppercase", margin: 0 }}>Traffic & Content Analytics</p>
+              <p style={{ color: GOLD, fontSize: 10, letterSpacing: "0.28em", textTransform: "uppercase", margin: 0 }}>Weekly TOP 10 (하루 2회 갱신)</p>
             </div>
           </div>
           <div style={{ display: "flex", gap: "1rem" }}>
@@ -80,82 +84,46 @@ export default function AnalyticsDashboard() {
 
         {/* MAIN BODY */}
         <main style={{ background: "#f5f5f0", borderRadius: "0 0 16px 16px", padding: "2rem", boxShadow: "0 8px 40px rgba(0,0,0,0.18)" }}>
-          
+
           {/* MEMBERS */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "1.5rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
             <StatCard icon={<Users color="#a78bfa" />} title="Total Members" value={members?.total ?? 0} color="#a78bfa" />
             <StatCard icon={<Users color="#4285F4" />} title="Google 회원" value={members?.google ?? 0} color="#4285F4" />
             <StatCard icon={<Users color="#94a3b8" />} title="Email 회원" value={members?.email ?? 0} color="#94a3b8" />
+            <StatCard icon={<Users color="#FEE500" />} title="Kakao 회원" value={members?.kakao ?? 0} color="#FEE500" />
           </div>
 
-          {/* OVERVIEW CARDS */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1.5rem", marginBottom: "2rem" }}>
-            <StatCard icon={<Users color={GOLD} />} title="Total Visitors (30d)" value={totalVisitors} color={GOLD} />
-            <StatCard icon={<Eye color={CYAN} />} title="Total Content Views" value={totalDailyViews} color={CYAN} />
-            <StatCard icon={<TrendingUp color="#10b981" />} title="Accumulated Views" value={totalViews} color="#10b981" />
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
-            
-            {/* DAILY TRAFFIC TABLE */}
-            <section style={{ background: "#fff", padding: "1.5rem", borderRadius: 16, border: "1.5px solid rgba(0,0,0,0.05)" }}>
-              <h3 style={{ fontSize: 14, fontWeight: 900, fontStyle: "italic", color: BLACK, marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <BarChart2 size={18} color={GOLD} /> DAILY TRAFFIC (LAST 30 DAYS)
-              </h3>
-              <div style={{ maxHeight: 400, overflowY: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #eee", textAlign: "left" }}>
-                      <th style={{ padding: "0.75rem", color: "#888" }}>DATE</th>
-                      <th style={{ padding: "0.75rem", color: "#888" }}>VISITORS</th>
-                      <th style={{ padding: "0.75rem", color: "#888" }}>VIEWS</th>
+          <section style={{ background: "#fff", padding: "1.5rem", borderRadius: 16, border: "1.5px solid rgba(0,0,0,0.05)" }}>
+            <h3 style={{ fontSize: 14, fontWeight: 900, fontStyle: "italic", color: BLACK, marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <TrendingUp size={18} color={CYAN} /> WEEKLY TOP 10
+            </h3>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #eee", textAlign: "left" }}>
+                  <th style={{ padding: "0.75rem", color: "#888" }}>RANK</th>
+                  <th style={{ padding: "0.75rem", color: "#888" }}>TITLE</th>
+                  <th style={{ padding: "0.75rem", color: "#888", textAlign: "right" }}>조회수</th>
+                  <th style={{ padding: "0.75rem", color: "#888", textAlign: "right" }}>댓글</th>
+                  <th style={{ padding: "0.75rem", color: "#888", textAlign: "right" }}>추천</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ranking.length === 0 ? (
+                  <tr><td colSpan={5} style={{ textAlign: "center", padding: "2rem", color: "#bbb" }}>데이터 없음</td></tr>
+                ) : (
+                  ranking.map((post, idx) => (
+                    <tr key={post.id} style={{ borderBottom: "1px solid #f5f5f5" }}>
+                      <td style={{ padding: "0.75rem", fontWeight: 900, color: idx < 3 ? GOLD : "#bbb" }}>{idx + 1}</td>
+                      <td style={{ padding: "0.75rem", maxWidth: 320, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{post.title}</td>
+                      <td style={{ padding: "0.75rem", textAlign: "right", fontWeight: 900, color: CYAN }}>{post.view_count.toLocaleString()}</td>
+                      <td style={{ padding: "0.75rem", textAlign: "right", fontWeight: 700 }}>{post.comment_count.toLocaleString()}</td>
+                      <td style={{ padding: "0.75rem", textAlign: "right", fontWeight: 700 }}>{post.like_count.toLocaleString()}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {dailyStats.length === 0 ? (
-                      <tr><td colSpan={3} style={{ textAlign: "center", padding: "2rem", color: "#bbb" }}>No data yet. Tracking started now.</td></tr>
-                    ) : (
-                      dailyStats.slice().reverse().map((stat: any) => (
-                        <tr key={stat.date} style={{ borderBottom: "1px solid #f5f5f5" }}>
-                          <td style={{ padding: "0.75rem", fontWeight: 700 }}>{stat.date}</td>
-                          <td style={{ padding: "0.75rem", color: GOLD, fontWeight: 900 }}>{stat.visitors}</td>
-                          <td style={{ padding: "0.75rem", color: CYAN, fontWeight: 900 }}>{stat.total_views}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            {/* TOP CONTENT TABLE */}
-            <section style={{ background: "#fff", padding: "1.5rem", borderRadius: 16, border: "1.5px solid rgba(0,0,0,0.05)" }}>
-              <h3 style={{ fontSize: 14, fontWeight: 900, fontStyle: "italic", color: BLACK, marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <TrendingUp size={18} color={CYAN} /> TOP PERFORMING CONTENT
-              </h3>
-              <div style={{ maxHeight: 400, overflowY: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #eee", textAlign: "left" }}>
-                      <th style={{ padding: "0.75rem", color: "#888" }}>RANK</th>
-                      <th style={{ padding: "0.75rem", color: "#888" }}>TITLE</th>
-                      <th style={{ padding: "0.75rem", color: "#888", textAlign: "right" }}>VIEWS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topPosts.map((post: any, idx: number) => (
-                      <tr key={post.id} style={{ borderBottom: "1px solid #f5f5f5" }}>
-                        <td style={{ padding: "0.75rem", fontWeight: 900, color: idx < 3 ? GOLD : "#bbb" }}>{idx + 1}</td>
-                        <td style={{ padding: "0.75rem", maxWidth: 200, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{post.title}</td>
-                        <td style={{ padding: "0.75rem", textAlign: "right", fontWeight: 900, color: CYAN }}>{post.views.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-          </div>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </section>
         </main>
       </div>
     </div>

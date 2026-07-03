@@ -205,6 +205,22 @@ scp .env.local nemonecoltd@34.64.98.113:/home/nemonecoltd/nemone-network/admin/
 
 ---
 
+---
+
+## 2026-06-12 작업 내역
+
+### 신규 기능: Supabase 회원 수 조회 — admin.nemoneai.com/data 상단 표시
+
+- **목적**: 통합 인증(Supabase)으로 관리 대시보드에서 회원 수 확인 불가 → /data 페이지 상단에 표시
+- **구현**:
+  - `src/app/api/users/count/route.ts` (신규): Supabase Admin API(`/auth/v1/admin/users`) 호출, `service_role` 키 사용. Google/Email 각각 구분 (`app_metadata.provider` 기준)
+  - `src/app/data/page.tsx`: Total Members / Google 회원 / Email 회원 StatCard 3개 상단 추가
+  - `ecosystem.config.cjs`: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` env 추가
+  - `.env.local`: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` 추가 (서버에도 반영 필요)
+- **주의**: `service_role` 키는 서버사이드 API route에서만 사용. 클라이언트 노출 금지.
+
+---
+
 ## 남은 작업
 
 - [ ] `ecosystem.config.cjs` PM2 환경변수 로딩 방식 개선 (현재 수동 export 필요)
