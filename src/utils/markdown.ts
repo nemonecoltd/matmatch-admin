@@ -6,8 +6,21 @@ const MD_BLOCK_START = "<!--md-import-->";
 const MD_BLOCK_END = "<!--/md-import-->";
 const MD_BLOCK_REGEX = /<!--md-import-->([\s\S]*?)<!--\/md-import-->/g;
 
+// MD 파일 맨 앞의 H1("# 제목")을 제거 — admin Title 필드와 중복 표시되는 것 방지.
+// 첫 줄(공백 제외)이 H1일 때만 제거하며, 본문 중간의 H1은 실제 소제목일 수 있어 건드리지 않음.
+function stripLeadingH1(markdown: string): string {
+  const lines = markdown.split(/\r?\n/);
+  let i = 0;
+  while (i < lines.length && lines[i].trim() === "") i++;
+  if (i < lines.length && /^#\s+\S/.test(lines[i])) {
+    lines.splice(i, 1);
+    while (i < lines.length && lines[i].trim() === "") lines.splice(i, 1);
+  }
+  return lines.join("\n");
+}
+
 export function mdToHtml(markdown: string): string {
-  return marked.parse(markdown, { gfm: true, breaks: false }) as string;
+  return marked.parse(stripLeadingH1(markdown), { gfm: true, breaks: false }) as string;
 }
 
 export function wrapMdBlock(html: string): string {
