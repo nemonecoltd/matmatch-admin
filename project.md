@@ -221,6 +221,15 @@ scp .env.local nemonecoltd@34.64.98.113:/home/nemonecoltd/nemone-network/admin/
 
 ---
 
+## 2026-07-24 작업 내역
+
+### `/new`, `/edit` 페이지 버튼 정리
+- 상단 헤더의 `DATA` 버튼 제거 — **`/new`, `/edit` 두 페이지에서만** 제거, 어드민 메인(`/data`)의 DATA 버튼은 그대로 유지
+- Publish/Update 버튼(골드 그라디언트)을 헤더로 이동, `form="postForm"`/`form="editForm"` 속성으로 폼 바깥에서도 제출 가능하도록 연결
+- Show/Hide Preview 토글(아웃라인 스타일)은 폼 안 카테고리 선택 줄로 이동 — 기존 Publish 버튼 자리
+
+---
+
 ## 남은 작업
 
 - [ ] `ecosystem.config.cjs` PM2 환경변수 로딩 방식 개선 (현재 수동 export 필요)
