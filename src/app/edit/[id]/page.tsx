@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import "react-quill/dist/quill.snow.css";
 import { mdToHtml, wrapMdBlock, extractMdBlocks } from "@/utils/markdown";
@@ -259,25 +258,20 @@ export default function EditPage({ params }: { params: { id: string } }) {
             <h1 style={{ color: "#fff", fontSize: 28, fontWeight: 900, fontStyle: "italic", margin: 0 }}>Edit Archive.</h1>
           </div>
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-            <Link href="/data">
-              <button type="button" style={{ background: "transparent", border: `2px solid ${GOLD}`, borderRadius: 8, padding: "0.5rem 1.1rem", color: GOLD, fontSize: 11, fontWeight: 900, fontStyle: "italic", cursor: "pointer" }}>
-                DATA
-              </button>
-            </Link>
-            <button type="button" onClick={() => setShowPreview(!showPreview)} style={{ background: showPreview ? GOLD : "transparent", border: `2px solid ${GOLD}`, borderRadius: 8, padding: "0.5rem 1.1rem", color: showPreview ? BLACK : GOLD, fontSize: 11, fontWeight: 900, fontStyle: "italic", cursor: "pointer", transition: "all 0.2s" }}>
-              {showPreview ? "Hide Preview" : "Show Preview"}
+            <button type="submit" form="editForm" disabled={saving} style={{ background: saving ? "#555" : `linear-gradient(to bottom, ${GOLD}, #a07820)`, color: BLACK, border: "none", borderRadius: 8, padding: "0.5rem 1.2rem", fontSize: 12, fontWeight: 900, fontStyle: "italic", cursor: saving ? "not-allowed" : "pointer", boxShadow: saving ? "none" : `0 4px 14px rgba(212,175,55,0.35)` }}>
+              {saving ? "⏳ ..." : "✎ Update Database"}
             </button>
             <button type="button" onClick={() => router.push("/")} style={{ background: "transparent", border: "2px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "0.5rem 1.1rem", color: "#aaa", fontSize: 11, fontWeight: 700, fontStyle: "italic", cursor: "pointer" }}>← Cancel</button>
           </div>
         </header>
 
         <main style={{ background: "#f5f5f0", borderRadius: "0 0 16px 16px", padding: "2rem", boxShadow: "0 8px 40px rgba(0,0,0,0.18)", display: "flex", gap: "2rem" }}>
-          
+
           {/* EDITOR SECTION */}
           <div style={{ flex: 1, border: `1.5px solid ${GOLD}`, borderRadius: 12, padding: "1.75rem" }}>
-            <form onSubmit={handleUpdate} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <form id="editForm" onSubmit={handleUpdate} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 
-              {/* 카테고리 + 컨텐츠타입 콤보 + Update 버튼 */}
+              {/* 카테고리 + 컨텐츠타입 콤보 + Preview 토글 */}
               <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", borderBottom: "1px solid rgba(0,0,0,0.08)", paddingBottom: "1rem" }}>
                 <select value={formData.category} onChange={(e) => update("category", e.target.value)}
                   style={{ background: "#0c0c0c", border: `1.5px solid ${GOLD}`, borderRadius: 8, color: GOLD, fontSize: 11, fontWeight: 700, padding: "0.45rem 0.7rem", cursor: "pointer", fontStyle: "italic", outline: "none" }}>
@@ -290,8 +284,8 @@ export default function EditPage({ params }: { params: { id: string } }) {
                   ))}
                 </select>
                 <span style={{ color: CYAN, fontSize: 10, fontWeight: 900 }}>#{id}</span>
-                <button type="submit" disabled={saving} style={{ marginLeft: "auto", background: saving ? "#555" : `linear-gradient(to bottom, ${GOLD}, #a07820)`, color: BLACK, border: "none", borderRadius: 8, padding: "0.45rem 1.2rem", fontSize: 12, fontWeight: 900, fontStyle: "italic", cursor: saving ? "not-allowed" : "pointer", boxShadow: saving ? "none" : `0 4px 14px rgba(212,175,55,0.35)` }}>
-                  {saving ? "⏳ ..." : "✎ Update Database"}
+                <button type="button" onClick={() => setShowPreview(!showPreview)} style={{ marginLeft: "auto", background: showPreview ? GOLD : "transparent", border: `2px solid ${GOLD}`, borderRadius: 8, padding: "0.45rem 1.1rem", color: showPreview ? BLACK : GOLD, fontSize: 11, fontWeight: 900, fontStyle: "italic", cursor: "pointer", transition: "all 0.2s" }}>
+                  {showPreview ? "Hide Preview" : "Show Preview"}
                 </button>
               </div>
 

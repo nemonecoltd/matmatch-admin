@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import dynamic from "next/dynamic";
 import "react-quill/dist/quill.snow.css";
 import { mdToHtml, wrapMdBlock } from "@/utils/markdown";
@@ -229,13 +228,8 @@ export default function NewPost() {
             </div>
           </div>
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-            <Link href="/data">
-              <button type="button" style={{ background: "transparent", border: `2px solid ${GOLD}`, borderRadius: 8, padding: "0.5rem 1.1rem", color: GOLD, fontSize: 11, fontWeight: 900, fontStyle: "italic", cursor: "pointer" }}>
-                DATA
-              </button>
-            </Link>
-            <button type="button" onClick={() => setShowPreview(!showPreview)} style={{ background: showPreview ? GOLD : "transparent", border: `2px solid ${GOLD}`, borderRadius: 8, padding: "0.5rem 1.1rem", color: showPreview ? BLACK : GOLD, fontSize: 11, fontWeight: 900, fontStyle: "italic", cursor: "pointer", transition: "all 0.2s" }}>
-              {showPreview ? "Hide Preview" : "Show Preview"}
+            <button type="submit" form="postForm" disabled={loading} style={{ marginLeft: "auto", background: loading ? "#555" : `linear-gradient(to bottom, ${GOLD}, #a07820)`, color: BLACK, border: "none", borderRadius: 8, padding: "0.5rem 1.2rem", fontSize: 12, fontWeight: 900, fontStyle: "italic", cursor: loading ? "not-allowed" : "pointer", boxShadow: loading ? "none" : `0 4px 14px rgba(212,175,55,0.35)` }}>
+              {loading ? "⏳ ..." : "▶ Publish Archive"}
             </button>
             <button type="button" onClick={() => router.push("/")} style={{ background: "transparent", border: `2px solid rgba(255,255,255,0.2)`, borderRadius: 8, padding: "0.5rem 1.1rem", color: "#aaa", fontSize: 11, fontWeight: 700, fontStyle: "italic", cursor: "pointer" }}>← Back to Admin</button>
           </div>
@@ -247,7 +241,7 @@ export default function NewPost() {
           {/* EDITOR SECTION */}
           <div style={{ flex: 1, border: `1.5px solid ${GOLD}`, borderRadius: 12, padding: "1.75rem" }}>
             
-            <form onSubmit={handleSubmit}>
+            <form id="postForm" onSubmit={handleSubmit}>
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 
                 {/* 카테고리 + 컨텐츠타입 콤보 + Publish 버튼 */}
@@ -262,8 +256,8 @@ export default function NewPost() {
                       <option key={val} value={val}>{label}</option>
                     ))}
                   </select>
-                  <button type="submit" disabled={loading} style={{ marginLeft: "auto", background: loading ? "#555" : `linear-gradient(to bottom, ${GOLD}, #a07820)`, color: BLACK, border: "none", borderRadius: 8, padding: "0.45rem 1.2rem", fontSize: 12, fontWeight: 900, fontStyle: "italic", cursor: loading ? "not-allowed" : "pointer", boxShadow: loading ? "none" : `0 4px 14px rgba(212,175,55,0.35)` }}>
-                    {loading ? "⏳ ..." : "▶ Publish Archive"}
+                  <button type="button" onClick={() => setShowPreview(!showPreview)} style={{ marginLeft: "auto", background: showPreview ? GOLD : "transparent", border: `2px solid ${GOLD}`, borderRadius: 8, padding: "0.45rem 1.1rem", color: showPreview ? BLACK : GOLD, fontSize: 11, fontWeight: 900, fontStyle: "italic", cursor: "pointer", transition: "all 0.2s" }}>
+                    {showPreview ? "Hide Preview" : "Show Preview"}
                   </button>
                 </div>
 
