@@ -18,6 +18,8 @@ export default function CMSDesk() {
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[] | null>(null);
+  const [searching, setSearching] = useState(false);
   
   // 카테고리 업데이트 (이전의 하드코딩된 카테고리에서 새 카테고리로 변경)
   const categories = ["ALL", "Taste", "Culture", "Life", "Tech"]; 
@@ -48,6 +50,33 @@ export default function CMSDesk() {
       fetchPosts();
     }
   }, [status, activeCategory]); // status와 activeCategory 변경 시 fetch
+
+  // 검색어는 프론트/어드민이 동일한 백엔드 검색(title+본문+태그+카테고리, ILIKE)을 쓰도록
+  // 서버에 위임 — 기존엔 admin이 title/#id만, 프론트는 title+본문+태그를 각자 다르게(그리고
+  // admin은 최대 500개, 프론트는 기본 100개까지만) 봐서 같은 검색어에도 결과가 달랐던 문제.
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults(null);
+      return;
+    }
+    setSearching(true);
+    const t = setTimeout(() => {
+      fetch(`/api/posts?limit=500&q=${encodeURIComponent(q)}`)
+        .then((res) => (res.ok ? res.json() : { posts: [] }))
+        .then((data) => {
+          const all = Array.isArray(data) ? data : (data.posts || []);
+          setSearchResults(activeCategory === "ALL" ? all : all.filter((p: any) => p.category === activeCategory));
+        })
+        .catch((err) => {
+          console.error("Search Fetch Error:", err);
+          setSearchResults([]);
+        })
+        .finally(() => setSearching(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery, activeCategory, status]);
 
   // 인증 로직 (최우선)
   useEffect(() => {
@@ -143,7 +172,7 @@ export default function CMSDesk() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="제목 또는 번호(#id) 검색..."
+                placeholder="제목·본문·태그 또는 번호(#id) 검색..."
                 style={{ flex: 1, padding: "0.55rem 1rem", border: `2px solid ${searchQuery ? GOLD : "#ccc"}`, borderRadius: 8, fontSize: 13, fontStyle: "italic", background: "#fff", outline: "none", transition: "border 0.2s" }}
               />
               {searchQuery && (
@@ -176,11 +205,10 @@ export default function CMSDesk() {
             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
               {loading ? (
                 <p style={{ textAlign: "center", color: "#999", fontStyle: "italic", padding: "40px" }}>Fetching Database...</p>
+              ) : searchQuery.trim() && searching ? (
+                <p style={{ textAlign: "center", color: "#999", fontStyle: "italic", padding: "40px" }}>Searching...</p>
               ) : (() => {
-                const q = searchQuery.trim().toLowerCase();
-                const filtered = q
-                  ? posts.filter((p) => p.title?.toLowerCase().includes(q) || String(p.id) === q.replace(/^#/, ""))
-                  : posts;
+                const filtered = searchQuery.trim() ? (searchResults ?? []) : posts;
                 return filtered.length === 0 ? (
                   <p style={{ textAlign: "center", color: "#999", padding: "40px" }}>{searchQuery ? "검색 결과가 없습니다." : "등록된 글이 없습니다."}</p>
                 ) : filtered.map((post) => (
