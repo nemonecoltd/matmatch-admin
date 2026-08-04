@@ -26,7 +26,7 @@ export default function AnalyticsDashboard() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [ranking, setRanking] = useState<RankingItem[]>([]);
-  const [members, setMembers] = useState<{ total: number; google: number; email: number; kakao: number } | null>(null);
+  const [members, setMembers] = useState<{ total: number; google: number; email: number; kakao: number; naver: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -86,11 +86,12 @@ export default function AnalyticsDashboard() {
         <main className="dpg-main" style={{ background: "#f5f5f0", borderRadius: "0 0 16px 16px", padding: "2rem", boxShadow: "0 8px 40px rgba(0,0,0,0.18)" }}>
 
           {/* MEMBERS */}
-          <div className="dpg-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem", marginBottom: "2rem" }}>
-            <StatCard icon={<Users size={18} color="#a78bfa" />} title="Total Members" value={members?.total ?? 0} />
-            <StatCard icon={<Users size={18} color="#4285F4" />} title="Google 회원" value={members?.google ?? 0} />
-            <StatCard icon={<Users size={18} color="#94a3b8" />} title="Email 회원" value={members?.email ?? 0} />
-            <StatCard icon={<Users size={18} color="#FEE500" />} title="Kakao 회원" value={members?.kakao ?? 0} />
+          <div className="dpg-stats" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "0.75rem", marginBottom: "2rem" }}>
+            <StatCard icon={<Users size={18} color="#a78bfa" />} title="Total" value={members?.total ?? 0} />
+            <StatCard icon={<Users size={18} color="#4285F4" />} title="Google" value={members?.google ?? 0} />
+            <StatCard icon={<Users size={18} color="#94a3b8" />} title="Email" value={members?.email ?? 0} />
+            <StatCard icon={<Users size={18} color="#FEE500" />} title="Kakao" value={members?.kakao ?? 0} />
+            <StatCard icon={<Users size={18} color="#03C75A" />} title="Naver" value={members?.naver ?? 0} />
           </div>
 
           <section style={{ background: "#fff", padding: "1.5rem", borderRadius: 16, border: "1.5px solid rgba(0,0,0,0.05)" }}>
