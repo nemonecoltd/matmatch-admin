@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import "react-quill/dist/quill.snow.css";
-import { mdToHtml, wrapMdBlock } from "@/utils/markdown";
+import { mdToHtml, wrapMdBlock, extractMdTitle } from "@/utils/markdown";
 
 // ReactQuill을 클라이언트 컴포넌트로 동적 임포트
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false }) as any;
@@ -208,6 +208,12 @@ export default function NewPost() {
     const text = await file.text();
     setMdBlocksHtml(mdToHtml(text));
     setMdFileName(file.name);
+    // MD 파일의 H1을 Title 입력란에 자동 채움 — 기존 값이 있으면 덮어쓰지 않고,
+    // 채워진 뒤에도 일반 텍스트 입력란이라 자유롭게 수정 가능
+    if (!formData.title.trim()) {
+      const extractedTitle = extractMdTitle(text);
+      if (extractedTitle) update("title", extractedTitle);
+    }
     e.target.value = "";
   };
 

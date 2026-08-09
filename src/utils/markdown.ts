@@ -23,6 +23,18 @@ export function mdToHtml(markdown: string): string {
   return marked.parse(stripLeadingH1(markdown), { gfm: true, breaks: false }) as string;
 }
 
+// MD 파일 맨 앞 H1("# 제목")을 Title 입력란 자동 채움용으로 추출.
+// stripLeadingH1과 같은 "첫 비어있지 않은 줄이 H1인지" 판정을 공유하되, 여기선 제거 대신 텍스트만 반환.
+export function extractMdTitle(markdown: string): string | null {
+  const lines = markdown.split(/\r?\n/);
+  let i = 0;
+  while (i < lines.length && lines[i].trim() === "") i++;
+  if (i < lines.length && /^#\s+\S/.test(lines[i])) {
+    return lines[i].replace(/^#\s+/, "").trim();
+  }
+  return null;
+}
+
 export function wrapMdBlock(html: string): string {
   if (!html) return "";
   return `${MD_BLOCK_START}<div class="md-import-block">${html}</div>${MD_BLOCK_END}`;
