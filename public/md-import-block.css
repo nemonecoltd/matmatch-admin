@@ -1,0 +1,52 @@
+/* MD 업로드 첨부 콘텐츠(표 등) 전용 스타일 — public/에서 <link>로 직접 서빙.
+   원인 불명의 Next.js 14.2.3 + Tailwind v4 조합 빌드 버그로, 이 규칙들을 globals.css의
+   @layer components 안에 두면 프로덕션 빌드에서만(로컬 npm run dev는 정상) 통째로
+   사라지는 현상이 있었음(standalone Tailwind CLI로 직접 컴파일하면 정상 출력되는 것까지
+   확인 — Tailwind/PostCSS 자체 문제는 아니고 Next.js 빌드 파이프라인 어딘가에서 사라짐).
+   재현/원인 특정에 실패해 정공법 대신 별도 정적 CSS로 완전히 우회함(2026-08-09). */
+
+.prose-custom .md-import-block {
+  margin: 2rem 0;
+}
+.prose-custom .md-import-block table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.95em;
+  border: 1px solid rgba(212, 175, 55, 0.55);
+}
+.prose-custom .md-import-block th,
+.prose-custom .md-import-block td {
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+}
+.prose-custom .md-import-block th {
+  background: rgba(212, 175, 55, 0.16);
+  color: #d4af37;
+  font-weight: 900;
+}
+.prose-custom .md-import-block tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.05);
+}
+.prose-custom .md-import-block blockquote {
+  margin: 1.5rem 0;
+  padding: 1rem 1.5rem;
+  border-left: 3px solid #d4af37;
+  background: rgba(212, 175, 55, 0.06);
+  border-radius: 0 8px 8px 0;
+  color: #ddd;
+  font-style: italic;
+}
+.prose-custom .md-import-block code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.prose-custom .md-import-block pre {
+  background: #111;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+}
