@@ -150,6 +150,11 @@ export default function CMSDesk() {
               SPECIAL
             </button>
           </Link>
+          <Link href="/products">
+            <button style={{ background: "transparent", border: `2px solid #4a9eff`, borderRadius: 10, padding: "0.6rem 1.4rem", color: "#4a9eff", fontWeight: 700, fontStyle: "italic", fontSize: 13, letterSpacing: "0.08em", cursor: "pointer" }}>
+              PRODUCTS
+            </button>
+          </Link>
           <Link href="/new">
             <button style={{ background: `linear-gradient(to bottom, ${GOLD}, #a07820)`, color: "#0c0c0c", border: "none", borderRadius: 10, padding: "0.6rem 1.4rem", fontWeight: 700, fontStyle: "italic", fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", boxShadow: "0 4px 14px rgba(0,0,0,0.4)" }}>
               + NEW POST

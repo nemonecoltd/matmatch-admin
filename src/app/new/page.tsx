@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import "react-quill/dist/quill.snow.css";
@@ -118,7 +118,16 @@ export default function NewPost() {
     content_type: "YOUTUBE_LONG",
     video_url: "", // [절대고수] 필드명 video_url
     tags: "",
+    affiliate_product_id: "", // 선택 안 하면 프론트에서 태그로 자동매칭
   });
+
+  const [products, setProducts] = useState<{ id: number; label: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/affiliate-products")
+      .then((res) => res.json())
+      .then((data) => setProducts(Array.isArray(data.items) ? data.items : []))
+      .catch(() => setProducts([]));
+  }, []);
 
   // 이미지 미리보기 URL 생성
   const previewImageUrl = useMemo(() => {
@@ -309,6 +318,22 @@ export default function NewPost() {
                 <div>
                   <label style={labelStyle}>Tags (Comma separated)</label>
                   <input placeholder="architecture, gourmet..." value={formData.tags} onChange={(e) => update("tags", e.target.value)} onFocus={() => setFocused("tags")} onBlur={() => setFocused(null)} style={focusStyle("tags")} />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>🛒 쿠팡 파트너스 상품(선택) — 안 고르면 태그로 자동매칭</label>
+                  <select
+                    value={formData.affiliate_product_id}
+                    onChange={(e) => update("affiliate_product_id", e.target.value)}
+                    onFocus={() => setFocused("affiliate")}
+                    onBlur={() => setFocused(null)}
+                    style={focusStyle("affiliate")}
+                  >
+                    <option value="">(선택 안 함 — 태그 자동매칭)</option>
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>{p.label}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

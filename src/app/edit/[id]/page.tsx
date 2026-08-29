@@ -110,9 +110,17 @@ export default function EditPage({ params }: { params: { id: string } }) {
     body_text: "",
     category: "Taste",
     content_type: "YOUTUBE_LONG",
-    video_url: "", 
+    video_url: "",
     tags: "",
+    affiliate_product_id: "",
   });
+  const [products, setProducts] = useState<{ id: number; label: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/affiliate-products")
+      .then((res) => res.json())
+      .then((data) => setProducts(Array.isArray(data.items) ? data.items : []))
+      .catch(() => setProducts([]));
+  }, []);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -145,6 +153,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
           content_type: data.content_type || "YOUTUBE_LONG",
           video_url: data.video_url || "",
           tags: data.tags || "",
+          affiliate_product_id: data.affiliate_product_id != null ? String(data.affiliate_product_id) : "",
         });
         setMdBlocksHtml(extractedMd);
         if (extractedMd) setMdFileName("기존 첨부 콘텐츠");
@@ -331,6 +340,22 @@ export default function EditPage({ params }: { params: { id: string } }) {
               <div>
                 <label style={labelStyle}>Tags</label>
                 <input value={formData.tags} onChange={(e) => update("tags", e.target.value)} onFocus={() => setFocused("tags")} onBlur={() => setFocused(null)} style={focusStyle("tags")} />
+              </div>
+
+              <div>
+                <label style={labelStyle}>🛒 쿠팡 파트너스 상품(선택) — 안 고르면 태그로 자동매칭</label>
+                <select
+                  value={formData.affiliate_product_id}
+                  onChange={(e) => update("affiliate_product_id", e.target.value)}
+                  onFocus={() => setFocused("affiliate")}
+                  onBlur={() => setFocused(null)}
+                  style={focusStyle("affiliate")}
+                >
+                  <option value="">(선택 안 함 — 태그 자동매칭)</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
