@@ -86,7 +86,8 @@ export default function EditSpecialPage() {
       return;
     }
     if (selectedPosts.find(p => p.id === post.id)) return;
-    setSelectedPosts([...selectedPosts, post]);
+    // 새로 추가하는 기사가 공개 페이지 맨 위에 오도록 앞에 넣는다(순서=표시 순서)
+    setSelectedPosts([post, ...selectedPosts]);
     setSearchTerm("");
     setIsSearching(false);
   };
