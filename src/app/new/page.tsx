@@ -119,6 +119,8 @@ export default function NewPost() {
     video_url: "", // [절대고수] 필드명 video_url
     tags: "",
     affiliate_product_id: "", // 선택 안 하면 프론트에서 태그로 자동매칭
+    related3_title: "",
+    related3_url: "",
   });
 
   const [products, setProducts] = useState<{ id: number; label: string }[]>([]);
@@ -334,6 +336,26 @@ export default function NewPost() {
                       <option key={p.id} value={p.id}>{p.label}</option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>🔗 관련 스토리 3번째 칸 수동 지정(선택) — 비워두면 자동(같은 카테고리 최신글)</label>
+                  <input
+                    placeholder="표시할 제목 (비우면 연결된 글의 원래 제목 사용)"
+                    value={formData.related3_title}
+                    onChange={(e) => update("related3_title", e.target.value)}
+                    onFocus={() => setFocused("related3_title")}
+                    onBlur={() => setFocused(null)}
+                    style={{ ...focusStyle("related3_title"), marginBottom: "0.5rem" }}
+                  />
+                  <input
+                    placeholder="연결할 내부 글 URL (예: https://nemoneai.com/posts/123)"
+                    value={formData.related3_url}
+                    onChange={(e) => update("related3_url", e.target.value)}
+                    onFocus={() => setFocused("related3_url")}
+                    onBlur={() => setFocused(null)}
+                    style={focusStyle("related3_url")}
+                  />
                 </div>
 
                 <div>
