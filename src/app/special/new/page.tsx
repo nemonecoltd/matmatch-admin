@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 
+// 묶음 기사 개수 상한 — 예전 20개 제한을 풀고(2026-10-24) 공개 쪽 목록은 페이징으로 처리한다. 사실상 무제한인 안전 상한일 뿐이다.
+const MAX_SPECIAL_POSTS = 500;
+
 const GOLD = "#D4AF37";
 const CYAN = "#22d3ee";
 const BLACK = "#0c0c0c";
@@ -69,8 +72,8 @@ export default function NewSpecialPage() {
 
   // 포스트 선택 핸들러
   const handleAddPost = (post: any) => {
-    if (selectedPosts.length >= 20) {
-      alert("최대 20개의 기사만 묶을 수 있습니다.");
+    if (selectedPosts.length >= MAX_SPECIAL_POSTS) {
+      alert(`최대 ${MAX_SPECIAL_POSTS}개의 기사만 묶을 수 있습니다.`);
       return;
     }
     if (selectedPosts.find(p => p.id === post.id)) return; // 중복 방지
@@ -199,7 +202,7 @@ export default function NewSpecialPage() {
 
             {/* RELATED POSTS SECTION */}
             <div>
-              <label style={labelStyle}>묶음 기사 리스트 ({selectedPosts.length} / 20)</label>
+              <label style={labelStyle}>묶음 기사 리스트 ({selectedPosts.length}개)</label>
               
               {/* Selected Posts List */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1rem" }}>
@@ -222,7 +225,7 @@ export default function NewSpecialPage() {
               </div>
 
               {/* Add Post UI */}
-              {selectedPosts.length < 20 && (
+              {selectedPosts.length < MAX_SPECIAL_POSTS && (
                 <div style={{ position: "relative" }}>
                   <input 
                     type="text" 
